@@ -6,4 +6,4 @@ The script expects a folder filled with [markdown](http://daringfireball.net/pro
 
 Metadata is included in a [YAML](http://yaml.org/) block at the start of each post file: Title and Date are required keys, Tags and Abstract are optional.
 
-Have fun
+Have fun!
