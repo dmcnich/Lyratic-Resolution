@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                              The Idea of North
+#                               Lyra's Jordan
 #                      A blog engine by Duncan McNicholl
 #                                  CC-BY-NC
 
@@ -18,6 +18,8 @@ import string
 import codecs
 import os
 import pystache
+import shutil
+from scss import Scss
 
 def read_file(fileName, directory):
 #read contents of file into unicode string
@@ -49,14 +51,8 @@ def draft_status(article):
 #determine if article is post-dated
     return article['datestamp'] <= dt.today()
 
-def list_articles(inputFolder):
-#produce list of dictionaries from markdown files
-    articleList = []
-    fileList = os.listdir(inputFolder)
-    for file in fileList:
-        if file.endswith('.md'):
-            article = parse_file(file,inputFolder)
-            articleList.append(article)
+def sort_and_filter(articleList):
+#sorts articles chronologically and filters out post-dated articles
     articleList.sort(key=lambda k: k['datestamp'], reverse=True)
     articleListForPublishing = filter(draft_status,articleList)
     return articleListForPublishing
@@ -96,9 +92,26 @@ def selectArticles(tag,articles):
 
 def build_site(parameters):
 #build the relevant pages
-    articleList = list_articles(parameters['input'])
-    tagList = list_tags(articleList)
+    draftList = []
     pm = parameters
+    fileList = os.listdir(pm['input'])
+    for file in fileList:
+        if file.endswith('.md'):
+            article = parse_file(file,pm['input'])
+            draftList.append(article)
+        elif file.endswith('.scss'):
+            scss = read_file(file,pm['input'])
+            compiler = Scss()
+            css = compiler.compile(scss)
+            filePath = os.path.join(pm['output'],file[:-5]+'.css')
+            codecs.open(filePath,'w','utf8').write(css)
+        elif file.endswith('.stache'):
+            pass
+        else:
+            shutil.copy2(os.path.join(inputFolder,file),
+                         os.path.join(outputFolder,'static',file))
+    articleList = sort_and_filter(draftList)
+    tagList = list_tags(articleList)
     build_page(articleList[:pm['homeLength']],'index.stache',
                pm['input'],pm['output'],'index.html')
     build_page(articleList[:pm['feedLength']],'feed.stache',
