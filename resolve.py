@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                               Lyra's Jordan
+#                              The Alethiometer
 #                      A blog engine by Duncan McNicholl
 #                                  CC-BY-NC
 
@@ -12,14 +12,18 @@ DieM = {'input':'/path/to/input/files',
         'homeLength':6}
 
 #import necessary modules
-import markdown
 from datetime import datetime as dt
 import string
 import codecs
 import os
-import pystache
 import shutil
-from scss import Scss
+import math
+import markdown
+import pystache
+try:
+    from scss import Scss
+except ImportError:
+    pass
 
 def read_file(fileName, directory):
 #read contents of file into unicode string
@@ -27,20 +31,22 @@ def read_file(fileName, directory):
     fileContents = codecs.open(filePath,'r','utf8').read()
     return unicode(fileContents)
 
-def parse_file(fileName,directory):
+def parse_article(fileName,directory):
 #read contents of file into dictionary
     post = read_file(fileName,directory)
     md = markdown.Markdown(extensions = ['meta'])
     md.convert(post)
     article = {'title' : md.Meta['title'][0],
-               'abstract' : md.Meta['abstract'][0],
                'body' : md.convert(post),
                'datestamp' : dt.strptime(md.Meta['date'][0],'%Y-%m-%d')}
     article['date'] = article['datestamp'].strftime('%A, %d %B \'%y')
     article['updated'] = article['datestamp'].isoformat()+'Z'
     lowerTitle = str(article['title']).lower().translate(None,string.punctuation)
     article['slug'] = '-'.join(lowerTitle.split())+'.html'
+    article['wordcount'] = len(article['body'].split())+1
+    article['readtime'] = str(int(math.ceil(article['wordcount']/200))+1)
     try:
+        article['abstract'] = md.Meta['abstract'][0]
         article['tags'] = list(str(md.Meta['tags'][0]).split(', '))
         article['taglist'] = ({'tag':id} for id in article['tags'])
     except KeyError:
@@ -79,7 +85,7 @@ def list_tags(articles):
             pass
     return tagList
 
-def selectArticles(tag,articles):
+def select_articles(tag,articles):
 #select articles with given tag
     editedList = []
     for article in articles:
@@ -89,42 +95,50 @@ def selectArticles(tag,articles):
         except KeyError:
             pass
     return editedList
+    
+def sassify(file,input,output):
+#process scss file using Sass
+    scss = read_file(file,input)
+    compiler = Scss()
+    css = compiler.compile(scss)
+    filePath = os.path.join(output,file[:-4]+'css')
+    codecs.open(filePath,'w','utf8').write(css)
 
 def build_site(parameters):
-#build the relevant pages
-    draftList = []
+#build the relevant pages and process files
     pm = parameters
+
+    draftList = []
     fileList = os.listdir(pm['input'])
     for file in fileList:
         if file.endswith('.md'):
-            article = parse_file(file,pm['input'])
+            article = parse_article(file,pm['input'])
             draftList.append(article)
         elif file.endswith('.scss'):
-            scss = read_file(file,pm['input'])
-            compiler = Scss()
-            css = compiler.compile(scss)
-            filePath = os.path.join(pm['output'],file[:-5]+'.css')
-            codecs.open(filePath,'w','utf8').write(css)
+            sassify(file,pm['input'],pm['output'])
         elif file.endswith('.stache'):
             pass
         else:
-            shutil.copy2(os.path.join(inputFolder,file),
-                         os.path.join(outputFolder,'static',file))
+            shutil.copy2(os.path.join(pm['input'],file),
+                         os.path.join(pm['output'],'static',file))
+                         
     articleList = sort_and_filter(draftList)
+    for page in articleList:
+        build_page(page,'page.stache',pm['input'],
+                   pm['output'],page['slug'])
+                   
     tagList = list_tags(articleList)
+    for tag in tagList:
+        editedList = select_articles(tag,articleList)
+        build_page(editedList,'tag.stache',
+                   pm['input'],pm['output'],tag+'.html')
+    print tagList
+                   
     build_page(articleList[:pm['homeLength']],'index.stache',
                pm['input'],pm['output'],'index.html')
     build_page(articleList[:pm['feedLength']],'feed.stache',
                pm['input'],pm['output'],'feed.xml')
     build_page(articleList,'archive.stache',
                pm['input'],pm['output'],'archive.html')
-    for page in articleList:
-        build_page(page,'page.stache',pm['input'],
-                   pm['output'],page['slug'])
-    for tag in tagList:
-        editedList = selectArticles(tag,articleList)
-        build_page(editedList,'tag.stache',
-                   pm['input'],pm['output'],tag+'.html')
-    print tagList
 
 build_site(DieM)
