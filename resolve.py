@@ -1,77 +1,87 @@
 #!/usr/bin/env python
-
-#      Lyratic Resolution: Belacqua Edition
-#       A blog engine by Duncan McNicholl
+#
+#     Lyratic Resolution: Silvertongue Edition
+#             The Decanter of Tokay
+#        A blog engine by Duncan McNicholl
 #                   CC-BY-NC
+#
+#start with blog parameters
 
+DieM = {'input':'/path/to/input/files',
+        'output':'/path/to/output/files',
+        'feedLength':12,
+        'homeLength':6}
+
+#import necessary modules
 import markdown
+from datetime import datetime as dt
 import string
-import datetime
-import time
-import os
 import codecs
+import os
+import pystache
 
-class Article(object):
-  def __init__(self, file):
+def read_file(fileName, directory):
+#read contents of file into unicode string
+    filePath = os.path.join(directory,fileName)
+    fileContents = codecs.open(filePath,'r','utf8').read()
+    return unicode(fileContents)
+
+def parse_file(fileName,directory):
+#read contents of file into dictionary
+    post = read_file(fileName,directory)
     md = markdown.Markdown(extensions = ['meta'])
-    with codecs.open(os.path.join(dir,file),'r','utf8')as f:
-      post = unicode(f.read())
-    self.body = md.convert(post)
-    self.title = (md.Meta['title'])[0]
-    self.date = (md.Meta['date'])[0]
-    self.abstract = (md.Meta['abstract'])[0]
-    self.tags = (md.Meta['tags'])
-    self.slug = '-'.join(str(self.title).lower().translate(None,string.punctuation).split())+'.html'
-    self.datestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(str(self.date), '%Y-%m-%d'))).date()
-    self.nicedate = self.datestamp.strftime('%A, %d %B \'%y')
-    self.filename = os.path.join(output_dir,self.slug)
-    
-#read in files
+    md.convert(post)
+    article = {'title' : md.Meta['title'][0],
+               'abstract' : md.Meta['abstract'][0],
+               'body' : md.convert(post),
+               'datestamp' : dt.strptime(md.Meta['date'][0],'%Y-%m-%d')}
+    article['date'] = article['datestamp'].strftime('%A, %d %B \'%y')
+    article['updated'] = article['datestamp'].isoformat()+'Z'
+    lowerTitle = str(article['title']).lower().translate(None,string.punctuation)
+    article['slug'] = '-'.join(lowerTitle.split())+'.html'
+    return article
+	
+def draft_status(article):
+#determine if article is post-dated
+    return article['datestamp'] <= dt.today()
 
-dir = '/path/to/markdown/files'
-template_dir = '/path/to/template/files'
-output_dir = '/path/to/html/files'
+def make_list(inputFolder):
+#produce list of dictionaries from directory
+    articleList = []
+    fileList = os.listdir(inputFolder)
+    for file in fileList:
+        if file.endswith('.md'):
+            article = parse_file(file,inputFolder)
+            articleList.append(article)
+    articleList.sort(key=lambda k: k['datestamp'], reverse=True)
+    articleListForPublishing = filter(draft_status,articleList)
+    return articleListForPublishing
 
-articlelist = os.listdir(dir)
-templatelist = os.listdir(template_dir)
-templates = {}
-articles = []
+def build_page(articles,templateName,inputFolder,outputFolder):
+#turn a dictionary into a webpage
+    template = read_file(templateName,inputFolder)
+    data = {'updated':dt.isoformat(dt.now())+'Z','articles':articles}
+    html = pystache.render(template,data)
+    if templateName == 'page.stache':
+        fileName = articles['slug']
+    elif templateName == 'feed.stache':
+        fileName = templateName[:-7]+'.xml'
+    else:
+        fileName = templateName[:-7]+'.html'
+    filePath = os.path.join(outputFolder,fileName)
+    codecs.open(filePath,'w','utf8').write(html)
 
-for template in templatelist:
-  if not template.startswith('.'):
-    with open(os.path.join(template_dir,template)) as t:
-      templates[template[:-4]] = string.Template(t.read())
+def build_site(parameters):
+#build the relevant pages
+    articleList = make_list(parameters['input'])
+    pm = parameters
+    build_page(articleList[:pm['homeLength']],'index.stache',
+               pm['input'],pm['output'])
+    build_page(articleList[:pm['feedLength']],'feed.stache',
+               pm['input'],pm['output'])
+    build_page(articleList,'archive.stache',
+               pm['input'],pm['output'])
+    for page in articleList:
+        build_page(page,'page.stache',pm['input'],pm['output'])
 
-for a in articlelist:
-  if not a.startswith('.'):
-    article = Article(a)
-    articles.append(article)
-
-articles.sort(key=lambda k: k.datestamp, reverse=True)
-
-#generate archive, feed, home, and pages
-
-content = {'archive':'','feed':'','home':''}
-n = 0
-
-for article in articles:
-  pieces = dict(body = article.body, title = article.title, date = article.nicedate, abstract = article.abstract, tags = article.tags, slug = article.slug, datestamp = article.date + 'T15:00:00Z')
-  content['archive'] = content['archive'] + templates['snippet'].substitute(pieces)
-  if n < 1:
-    content['updated'] = pieces['datestamp']
-  if n < 6:
-    content['home'] = content['home'] + templates['post'].substitute(pieces)
-  if n < 12:
-    content['feed'] = content['feed'] + templates['atom'].substitute(pieces)
-  with codecs.open(os.path.join(output_dir,article.filename),'w','utf8') as o:
-    o.write(templates['page'].substitute(pieces))
-  n = n+1
-  
-#write out pages
-
-with codecs.open(os.path.join(output_dir,'index.html'),'w','utf8') as o:
-  o.write(templates['home'].substitute(content))
-with codecs.open(os.path.join(output_dir,'archive.html'),'w','utf8') as o:
-  o.write(templates['archive'].substitute(content))
-with codecs.open(os.path.join(output_dir,'index.xml'),'w','utf8') as o:
-  o.write(templates['feed'].substitute(content))
+build_site(DieM)
