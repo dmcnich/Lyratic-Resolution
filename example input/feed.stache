@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<link href="http://www.example.com/feed.xml" rel="self" />
+
+  <title>Blog Title</title>
+  <link href="http://www.example.com"/>
+  <updated>{{updated}}</updated>
+  <author>
+    <name>author</name>
+  </author>
+  <id>http://www.example.com</id>
+  <rights>CC BY NC author</rights>
+  <icon>http://www.example.com/icon.jpg</icon>
+  <subtitle>Blog Title</subtitle>
+  
+  {{#articles}}
+  <entry>
+    <title>{{title}}</title>
+    <link href="http://www.example.com/{{slug}}"/>
+    <id>http://www.example.com/{{slug}}</id>
+    <updated>{{updated}}</updated>
+    <summary>{{abstract}}</summary>
+    <content type="xhtml">
+      <div xmlns="http://www.w3.org/1999/xhtml">
+        {{{body}}}
+      </div>
+    </content>
+  </entry>
+  
+{{/articles}}
+
+</feed>
