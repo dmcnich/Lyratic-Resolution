@@ -1,0 +1,123 @@
+@charset "UTF-8";
+body {
+  font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+  font-size: 1.8em;
+  text-align: left;
+  margin: 0;
+  background: white;
+}
+
+h1 {
+  font-size: 2em;
+  margin: 0;
+  text-align: center;
+}
+
+h2 {
+  font-size: 1.6em;
+}
+
+h3 {
+  font-size: 1.4em;
+}
+
+img {
+  width: 90%;
+  margin: 5%;
+  box-shadow: 0 0 1em rgba(40, 40, 40, 0.5);
+}
+img.small {
+  width: 40%;
+  margin: 5%;
+  float: left;
+}
+
+a {
+  text-decoration: none;
+  color: #af101c;
+}
+a:hover {
+  text-decoration: underline;
+}
+a:visited {
+  color: #720a12;
+}
+h1 a {
+  color: black;
+}
+h1 a:visited {
+  color: black;
+}
+
+header, section {
+  margin: 3em;
+}
+
+blockquote:before {
+  content: "\201c";
+  left: 0.5em;
+  color: #dedede;
+  font-size: 4em;
+  position: absolute;
+  line-height: 0.2em;
+}
+blockquote:after {
+  content: "\201d";
+  right: 0.5em;
+  color: #dedede;
+  font-size: 4em;
+  position: absolute;
+  line-height: 0.2em;
+}
+
+.date {
+  font-size: 0.5em;
+  margin: -3em 0;
+}
+
+.masthead {
+  font-size: 2.6em;
+  letter-spacing: -0.03em;
+}
+
+.byline {
+  margin: -1em auto;
+  text-align: center;
+  font-size: 0.4em;
+  padding: 0em;
+}
+
+footer {
+  font-size: 0.5em;
+  text-align: center;
+  margin: 1em;
+}
+footer ul {
+  list-style-type: none;
+  display: block;
+}
+footer li {
+  display: inline-block;
+}
+
+#search {
+  margin: 2em auto;
+  width: 6em;
+}
+
+@media only screen and (min-width:60em) {
+  header, section {
+    width: 24em;
+    margin: 3em auto;
+  }
+}
+
+@media only screen and (max-width:45em) {
+  body {
+    font-size: 1.2em;
+  }
+
+  section {
+    margin: 2em;
+  }
+}
