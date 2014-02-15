@@ -110,6 +110,8 @@ def sassify(file,input,output):
 
 def wrangle_files(input,output):
 #process input folder for markdown and sass files
+  if not os.path.isdir(os.path.join(output,'static')):
+    mkdir(os.path.join(output,'static'))
   draftList = []
   fileList = os.listdir(input)
   for file in fileList:
