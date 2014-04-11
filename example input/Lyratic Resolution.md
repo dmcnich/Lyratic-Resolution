@@ -1,7 +1,9 @@
+---
 Date: 2013-07-08
 Title: Lyratic Resolution
 Tags: code
 Abstract: How I came to write my own blog engine
+---
 
 The age we live in is a fast moving one, where old skills and objects are being left behind at an increasing rate. My father told me last week that he had learned to write with a dip pen and an inkwell on his desk, and one generation later I find myself in a shrinking minority of people who enjoy writing with a fountain pen, despite its relative convenience and the clearly superior aesthetic of the end result. 
 

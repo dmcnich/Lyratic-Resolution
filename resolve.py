@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                              The Throwing Nets
+#                                   John Faa
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -10,6 +10,10 @@ DieM = {'input':'/path/to/input',
         'output':'/path/to/output',
         'feedLength':12,
         'homeLength':6}
+        
+AWS = {'access':'AWS_ACCESS_KEY',
+       'secret':'AWS_SECRET_KEY',
+       'bucket':'BUCKET_NAME'}
 
 #import necessary modules
 from datetime import datetime as dt
@@ -21,21 +25,43 @@ import markdown
 import pystache
 try:
   from scss import Scss
+  from boto.s3.connection import S3Connection
+  from boto.s3.key import Key
 except ImportError:
   pass
 
-def read_file(fileName, input):
+def read_file(fileName,input):
 #read contents of file into unicode string
   filePath = os.path.join(input,fileName)
   fileContents = codecs.open(filePath,'r','utf8').read()
   return unicode(fileContents)
 
+def write_file(fileName,output,content):
+#write unicode string out to file
+  if output == 's3':
+    conn = S3Connection(AWS['access'],AWS['secret'])
+    bucket = conn.get_bucket(AWS['bucket'])
+    k = Key(bucket)
+    k.key = fileName
+    k.set_contents_from_string(content)
+  else:
+    filePath = os.path.join(output,fileName)
+    codecs.open(filePath,'w','utf8').write(content)
+
+def copy_file(fileName,input,output):
+  if output == 's3':
+    conn = S3Connection(AWS['access'],AWS['secret'])
+    bucket = conn.get_bucket(AWS['bucket'])
+    k = Key(bucket)
+    k.key = fileName
+    k.set_contents_from_filename(os.path.join(input,fileName))
+  else:
+    shutil.copy2(os.path.join(input,fileName),
+                 os.path.join(output,fileName))
+
 def parse_article(fileName,input):
 #read contents of file into dictionary
-  try: #use smartypants if it's installed
-    md = markdown.Markdown(extensions = ['meta','smartypants'])
-  except ImportError:
-    md = markdown.Markdown(extensions = ['meta'])
+  md = markdown.Markdown(extensions = ['meta','smarty'])
   post = read_file(fileName,input)
   article = {}
   article['body'] = md.convert(post)
@@ -103,15 +129,13 @@ def select_articles(tag,articles):
 def sassify(file,input,output):
 #process scss file using Sass
   scss = read_file(file,input)
-  compiler = Scss()
+  compiler = Scss(scss_opts={'style':'compact'})
   css = compiler.compile(scss)
-  filePath = os.path.join(output,file[:-4]+'css')
-  codecs.open(filePath,'w','utf8').write(css)
+  fileName = file[:-4]+'css'
+  write_file(fileName,output,css)
 
 def wrangle_files(input,output):
 #process input folder for markdown and sass files
-  if not os.path.isdir(os.path.join(output,'static')):
-    mkdir(os.path.join(output,'static'))
   draftList = []
   fileList = os.listdir(input)
   for file in fileList:
@@ -125,18 +149,16 @@ def wrangle_files(input,output):
     elif file.startswith('.'):
       pass
     else:
-      shutil.copy2(os.path.join(input,file),
-                   os.path.join(output,'static',file))
+      copy_file(file,input,output)
   return draftList
 
 def build_page(articles,templateName,input,output,fileName):
 #turn a dictionary and template into a webpage
   template = read_file(templateName,input)
-  data = {'updated':dt.isoformat(dt.now())+'Z',
+  data = {'updated':dt.isoformat(dt.utcnow())+'Z',
           'tag':fileName[:-5],'articles':articles}
   html = pystache.render(template,data)
-  filePath = os.path.join(output,fileName)
-  codecs.open(filePath,'w','utf8').write(html)
+  write_file(fileName,output,html)
 
 def build_site(parameters):
 #build the relevant pages and process files
