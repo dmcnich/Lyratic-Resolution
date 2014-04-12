@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                   John Faa
+#                                 Frustration
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -21,6 +21,7 @@ import string
 import codecs
 import os
 import shutil
+import gzip
 import markdown
 import pystache
 try:
@@ -30,34 +31,84 @@ try:
 except ImportError:
   pass
 
-def read_file(fileName,input):
-#read contents of file into unicode string
-  filePath = os.path.join(input,fileName)
-  fileContents = codecs.open(filePath,'r','utf8').read()
-  return unicode(fileContents)
+def build_site(parameters):
+#build the relevant pages and process files
+  pm = parameters
+  if pm['output'] == 's3':
+    pm['output'] = connect_to_s3(AWS)
+  draftList = wrangle_files(pm['input'],pm['output'])    
+  articleList = sort_and_filter(draftList)
+    
+  for article in articleList:
+    build_page(article,'page.stache',pm['input'],
+               pm['output'],article['slug'])
 
-def write_file(fileName,output,content):
-#write unicode string out to file
-  if output == 's3':
-    conn = S3Connection(AWS['access'],AWS['secret'])
-    bucket = conn.get_bucket(AWS['bucket'])
-    k = Key(bucket)
-    k.key = fileName
-    k.set_contents_from_string(content)
-  else:
-    filePath = os.path.join(output,fileName)
-    codecs.open(filePath,'w','utf8').write(content)
+  tagList = list_tags(articleList)
+  for tag in tagList:
+    editedList = select_tagged_articles(tag,articleList)
+    build_page(editedList,'tag.stache',
+               pm['input'],pm['output'],tag+'.html')
 
-def copy_file(fileName,input,output):
-  if output == 's3':
-    conn = S3Connection(AWS['access'],AWS['secret'])
-    bucket = conn.get_bucket(AWS['bucket'])
-    k = Key(bucket)
-    k.key = fileName
-    k.set_contents_from_filename(os.path.join(input,fileName))
-  else:
-    shutil.copy2(os.path.join(input,fileName),
-                 os.path.join(output,fileName))
+  build_page(articleList[:pm['homeLength']],'index.stache',
+             pm['input'],pm['output'],'index.html')
+  build_page(articleList[:pm['feedLength']],'feed.stache',
+             pm['input'],pm['output'],'feed.xml')
+  build_page(articleList,'archive.stache',
+             pm['input'],pm['output'],'archive.html')
+  if type(pm['output']) == str:
+    compress_output(pm['output'])
+
+def wrangle_files(input,output):
+#process input folder for markdown and sass files
+  draftList = []
+  fileList = os.listdir(input)
+  for file in fileList:
+    if file.endswith(('.md','.txt')):
+      article = parse_article(file,input)
+      draftList.append(article)
+    elif file.endswith('.scss'):
+      sassify(file,input,output)
+    elif file.endswith('.stache'):
+      pass
+    elif file.startswith('.'):
+      pass
+    else:
+      copy_file(file,input,output)
+  return draftList
+
+def sort_and_filter(articleList):
+#sorts articles chronologically and filters out post-dated articles
+  articleList.sort(key=lambda k: k['datestamp'], reverse=True)
+  articleListForPublishing = filter(draft_status,articleList)
+  return articleListForPublishing
+  	
+def draft_status(article):
+#determine if article is post-dated
+  return article['datestamp'] <= dt.today()
+
+def list_tags(articles):
+#list all tags used
+  tagList = []
+  for article in articles:
+    try:
+      tags = article['tags']
+      for tag in tags:
+        if tag not in tagList:
+          tagList.append(tag)
+    except KeyError:
+      pass
+  return tagList
+
+def select_tagged_articles(tag,articles):
+#select articles with given tag
+  editedList = []
+  for article in articles:
+    try:
+      if tag in article['tags']:
+        editedList.append(article)
+    except KeyError:
+      pass
+  return editedList
 
 def parse_article(fileName,input):
 #read contents of file into dictionary
@@ -91,67 +142,7 @@ def parse_article(fileName,input):
   article['wordcount'] = len(article['body'].split())+1
   article['readtime'] = str(int(article['wordcount']/200)+2)
   return article
-	
-def draft_status(article):
-#determine if article is post-dated
-  return article['datestamp'] <= dt.today()
-
-def sort_and_filter(articleList):
-#sorts articles chronologically and filters out post-dated articles
-  articleList.sort(key=lambda k: k['datestamp'], reverse=True)
-  articleListForPublishing = filter(draft_status,articleList)
-  return articleListForPublishing
-
-def list_tags(articles):
-#list all tags used
-  tagList = []
-  for article in articles:
-    try:
-      tags = article['tags']
-      for tag in tags:
-        if tag not in tagList:
-          tagList.append(tag)
-    except KeyError:
-      pass
-  return tagList
-
-def select_articles(tag,articles):
-#select articles with given tag
-  editedList = []
-  for article in articles:
-    try:
-      if tag in article['tags']:
-        editedList.append(article)
-    except KeyError:
-      pass
-  return editedList
     
-def sassify(file,input,output):
-#process scss file using Sass
-  scss = read_file(file,input)
-  compiler = Scss(scss_opts={'style':'compact'})
-  css = compiler.compile(scss)
-  fileName = file[:-4]+'css'
-  write_file(fileName,output,css)
-
-def wrangle_files(input,output):
-#process input folder for markdown and sass files
-  draftList = []
-  fileList = os.listdir(input)
-  for file in fileList:
-    if file.endswith(('.md','.txt')):
-      article = parse_article(file,input)
-      draftList.append(article)
-    elif file.endswith('.scss'):
-      sassify(file,input,output)
-    elif file.endswith('.stache'):
-      pass
-    elif file.startswith('.'):
-      pass
-    else:
-      copy_file(file,input,output)
-  return draftList
-
 def build_page(articles,templateName,input,output,fileName):
 #turn a dictionary and template into a webpage
   template = read_file(templateName,input)
@@ -160,28 +151,56 @@ def build_page(articles,templateName,input,output,fileName):
   html = pystache.render(template,data)
   write_file(fileName,output,html)
 
-def build_site(parameters):
-#build the relevant pages and process files
-  pm = parameters
-  draftList = wrangle_files(pm['input'],pm['output'])    
-  articleList = sort_and_filter(draftList)
-    
-  for article in articleList:
-    build_page(article,'page.stache',pm['input'],
-               pm['output'],article['slug'])
+def connect_to_s3(AWS):
+#open connection to s3 bucket
+  conn = S3Connection(AWS['access'],AWS['secret'])
+  bucket = conn.get_bucket(AWS['bucket'])
+  return bucket
+  
+def read_file(fileName,input):
+#read contents of file into unicode string
+  filePath = os.path.join(input,fileName)
+  fileContents = codecs.open(filePath,'r','utf8').read()
+  return unicode(fileContents)
 
-  tagList = list_tags(articleList)
-  for tag in tagList:
-    editedList = select_articles(tag,articleList)
-    build_page(editedList,'tag.stache',
-               pm['input'],pm['output'],tag+'.html')
+def write_file(fileName,output,content):
+#write unicode string out to file
+  if type(output) == str:
+    filePath = os.path.join(output,fileName)
+    codecs.open(filePath,'w','utf8').write(content)
+  else:
+    k = Key(output)
+    k.key = fileName
+    k.set_contents_from_string(content)
 
-  build_page(articleList[:pm['homeLength']],'index.stache',
-             pm['input'],pm['output'],'index.html')
-  build_page(articleList[:pm['feedLength']],'feed.stache',
-             pm['input'],pm['output'],'feed.xml')
-  build_page(articleList,'archive.stache',
-             pm['input'],pm['output'],'archive.html')
+def copy_file(fileName,input,output):
+#copy production-ready files to output
+  if type(output) == str:
+    shutil.copy2(os.path.join(input,fileName),
+                 os.path.join(output,fileName))
+  else:
+    k = Key(output)
+    k.key = fileName
+    k.set_contents_from_filename(os.path.join(input,fileName))
+
+def sassify(file,input,output):
+#process scss file using Sass
+  scss = read_file(file,input)
+  compiler = Scss(scss_opts={'style':'compact'})
+  css = compiler.compile(scss)
+  fileName = file[:-4]+'css'
+  write_file(fileName,output,css)
+
+def compress_output(output):
+#compress text files in output
+  fileList = os.listdir(output)
+  for file in fileList:
+    if file.endswith(('.html','.xml','.css')):
+      f_in = open(os.path.join(output,file), 'rb')
+      f_out = gzip.open(os.path.join(output,file) + '.gz', 'wb')
+      f_out.writelines(f_in)
+      f_out.close()
+      f_in.close()
 
 if __name__ == '__main__':
   build_site(DieM)
