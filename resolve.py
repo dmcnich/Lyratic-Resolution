@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                  The Spies
+#                            The Consul and the Bear
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -82,12 +82,10 @@ def wrangle_files(input,output):
 def sort_and_filter(articleList):
 #sorts articles chronologically and filters out post-dated articles
   articleList.sort(key=lambda k: k['datestamp'], reverse=True)
-  articleListForPublishing = filter(draft_status,articleList)
-  return articleListForPublishing
-  	
-def draft_status(article):
-#determine if article is post-dated
-  return article['datestamp'] <= dt.today()
+  for article in articleList:
+    if article['datestamp'] >= dt.today():
+      articleList.remove(article)
+  return articleList
 
 def list_tags(articles):
 #list all tags used
@@ -140,7 +138,8 @@ def parse_article(fileName,input):
   #then generate further useful attributes from metadata
   article['date'] = article['datestamp'].strftime('%A, %d %B \'%y')
   article['updated'] = dt.fromtimestamp(modifiedTime).isoformat()+'Z'
-  lowerTitle = str(article['title']).lower().translate(None,string.punctuation)
+  remove_punct_map = dict.fromkeys(map(ord, string.punctuation))
+  lowerTitle = str(article['title']).lower().translate(remove_punct_map)
   article['slug'] = '-'.join(lowerTitle.split())+'.html'
   article['wordcount'] = len(article['body'].split())+1
   article['readtime'] = str(int(article['wordcount']/200)+2)
@@ -165,7 +164,7 @@ def read_file(fileName,input):
 #read contents of file into unicode string
   filePath = os.path.join(input,fileName)
   fileContents = codecs.open(filePath,'r','utf8').read()
-  return unicode(fileContents)
+  return fileContents
 
 def write_file(fileName,output,content):
 #write unicode string out to file
