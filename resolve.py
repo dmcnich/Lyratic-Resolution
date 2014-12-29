@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                 Frustration
+#                                  The Spies
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -40,8 +40,10 @@ def build_site(parameters):
   articleList = sort_and_filter(draftList)
     
   for article in articleList:
-    build_page(article,'page.stache',pm['input'],
-               pm['output'],article['slug'])
+    if (article not in os.listdir(pm['output']) or 
+    modTime(output,article['slug']) < modTime(input,article['sourceFile'])):
+      build_page(article,'page.stache',pm['input'],
+                 pm['output'],article['slug'])
 
   tagList = list_tags(articleList)
   for tag in tagList:
@@ -62,6 +64,7 @@ def wrangle_files(input,output):
 #process input folder for markdown and sass files
   draftList = []
   fileList = os.listdir(input)
+  existingOutput = os.listdir(output)
   for file in fileList:
     if file.endswith(('.md','.txt')):
       article = parse_article(file,input)
@@ -72,7 +75,7 @@ def wrangle_files(input,output):
       pass
     elif file.startswith('.'):
       pass
-    else:
+    elif file not in existingOutput:
       copy_file(file,input,output)
   return draftList
 
@@ -114,16 +117,16 @@ def parse_article(fileName,input):
 #read contents of file into dictionary
   md = markdown.Markdown(extensions = ['meta','smarty'])
   post = read_file(fileName,input)
+  modifiedTime = modTime(input,fileName)
   article = {}
   article['body'] = md.convert(post)
   try: #try to get title from front matter
     article['title'] = md.Meta['title'][0]
   except KeyError: #use filename if not present
-    article['title'] = fileName[:fileName.index('.')]
+    article['title'] = os.path.splittext(fileName)[0]
   try: #try to get date from front matter
     article['datestamp'] = dt.strptime(md.Meta['date'][0],'%Y-%m-%d')
   except KeyError: #use modified date if not present
-    modifiedTime = os.path.getmtime(os.path.join(input,fileName))
     article['datestamp'] = dt.fromtimestamp(modifiedTime)
   try: #try to get abstract from front matter
     article['abstract'] = md.Meta['abstract'][0]
@@ -136,11 +139,12 @@ def parse_article(fileName,input):
     pass
   #then generate further useful attributes from metadata
   article['date'] = article['datestamp'].strftime('%A, %d %B \'%y')
-  article['updated'] = article['datestamp'].isoformat()+'Z'
+  article['updated'] = dt.fromtimestamp(modifiedTime).isoformat()+'Z'
   lowerTitle = str(article['title']).lower().translate(None,string.punctuation)
   article['slug'] = '-'.join(lowerTitle.split())+'.html'
   article['wordcount'] = len(article['body'].split())+1
   article['readtime'] = str(int(article['wordcount']/200)+2)
+  article['sourceFile'] = fileName
   return article
     
 def build_page(articles,templateName,input,output,fileName):
@@ -183,6 +187,10 @@ def copy_file(fileName,input,output):
     k.key = fileName
     k.set_contents_from_filename(os.path.join(input,fileName))
 
+def modTime(dir,file):
+#retrieve modification time for file
+  return os.path.getmtime(os.path.join(dir,file))
+  
 def sassify(file,input,output):
 #process scss file using Sass
   scss = read_file(file,input)
