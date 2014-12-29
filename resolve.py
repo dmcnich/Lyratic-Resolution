@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                            The Consul and the Bear
+#                                    Armour
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -10,10 +10,6 @@ DieM = {'input':'/path/to/input',
         'output':'/path/to/output',
         'feedLength':12,
         'homeLength':6}
-        
-AWS = {'access':'AWS_ACCESS_KEY',
-       'secret':'AWS_SECRET_KEY',
-       'bucket':'BUCKET_NAME'}
 
 #import necessary modules
 from datetime import datetime as dt
@@ -26,16 +22,12 @@ import markdown
 import pystache
 try:
   from scss import Scss
-  from boto.s3.connection import S3Connection
-  from boto.s3.key import Key
 except ImportError:
   pass
 
 def build_site(parameters):
 #build the relevant pages and process files
   pm = parameters
-  if pm['output'] == 's3':
-    pm['output'] = connect_to_s3(AWS)
   draftList = wrangle_files(pm['input'],pm['output'])    
   articleList = sort_and_filter(draftList)
     
@@ -57,8 +49,7 @@ def build_site(parameters):
              pm['input'],pm['output'],'feed.xml')
   build_page(articleList,'archive.stache',
              pm['input'],pm['output'],'archive.html')
-  if type(pm['output']) == str:
-    compress_output(pm['output'])
+  compress_output(pm['output'])
 
 def wrangle_files(input,output):
 #process input folder for markdown and sass files
@@ -153,12 +144,6 @@ def build_page(articles,templateName,input,output,fileName):
           'tag':fileName[:-5],'articles':articles}
   html = pystache.render(template,data)
   write_file(fileName,output,html)
-
-def connect_to_s3(AWS):
-#open connection to s3 bucket
-  conn = S3Connection(AWS['access'],AWS['secret'])
-  bucket = conn.get_bucket(AWS['bucket'])
-  return bucket
   
 def read_file(fileName,input):
 #read contents of file into unicode string
@@ -168,23 +153,13 @@ def read_file(fileName,input):
 
 def write_file(fileName,output,content):
 #write unicode string out to file
-  if type(output) == str:
     filePath = os.path.join(output,fileName)
     codecs.open(filePath,'w','utf8').write(content)
-  else:
-    k = Key(output)
-    k.key = fileName
-    k.set_contents_from_string(content)
 
 def copy_file(fileName,input,output):
 #copy production-ready files to output
-  if type(output) == str:
     shutil.copy2(os.path.join(input,fileName),
                  os.path.join(output,fileName))
-  else:
-    k = Key(output)
-    k.key = fileName
-    k.set_contents_from_filename(os.path.join(input,fileName))
 
 def modTime(dir,file):
 #retrieve modification time for file
