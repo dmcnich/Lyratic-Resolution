@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                    Armour
+#                                 The Lost Boy
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
 #start with blog parameters
 DieM = {'input':'/path/to/input',
         'output':'/path/to/output',
-        'feedLength':12,
-        'homeLength':6}
+        'pages':[('index.html',6),('archive.html',1024),('feed.xml',12)]}
 
 #import necessary modules
 from datetime import datetime as dt
@@ -43,12 +42,10 @@ def build_site(parameters):
     build_page(editedList,'tag.stache',
                pm['input'],pm['output'],tag+'.html')
 
-  build_page(articleList[:pm['homeLength']],'index.stache',
-             pm['input'],pm['output'],'index.html')
-  build_page(articleList[:pm['feedLength']],'feed.stache',
-             pm['input'],pm['output'],'feed.xml')
-  build_page(articleList,'archive.stache',
-             pm['input'],pm['output'],'archive.html')
+  for page in pm['pages']:
+    build_page(articleList[:page[1]],os.path.splitext(page[0])[0]+
+               '.stache',pm['input'],pm['output'],page[0])
+
   compress_output(pm['output'])
 
 def wrangle_files(input,output):
@@ -62,9 +59,7 @@ def wrangle_files(input,output):
       draftList.append(article)
     elif file.endswith('.scss'):
       sassify(file,input,output)
-    elif file.endswith('.stache'):
-      pass
-    elif file.startswith('.'):
+    elif file.endswith('.stache') or file.startswith('.'):
       pass
     elif file not in existingOutput:
       copy_file(file,input,output)
@@ -112,7 +107,7 @@ def parse_article(fileName,input):
   try: #try to get title from front matter
     article['title'] = md.Meta['title'][0]
   except KeyError: #use filename if not present
-    article['title'] = os.path.splittext(fileName)[0]
+    article['title'] = os.path.splitext(fileName)[0]
   try: #try to get date from front matter
     article['datestamp'] = dt.strptime(md.Meta['date'][0],'%Y-%m-%d')
   except KeyError: #use modified date if not present
