@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-<link href="http://www.example.com/feed.xml" rel="self" />
+<link href="URL/feed.xml" rel="self" />
 
-  <title>Blog Title</title>
-  <link href="http://www.example.com"/>
+  <title>BLOG TITLE</title>
+  <link href="URL"/>
   <updated>{{updated}}</updated>
-  <author>
-    <name>author</name>
-  </author>
-  <id>http://www.example.com</id>
-  <rights>CC BY NC author</rights>
-  <icon>http://www.example.com/icon.jpg</icon>
-  <subtitle>Blog Title</subtitle>
+  <AUTHOR>
+    <name>AUTHOR</name>
+  </AUTHOR>
+  <id>URL</id>
+  <rights>CC BY NC AUTHOR</rights>
+  <icon>URL/icon.jpg</icon>
+  <subtitle>BLOG TITLE</subtitle>
   
   {{#articles}}
   <entry>
     <title>{{title}}</title>
-    <link href="http://www.example.com/{{slug}}"/>
-    <id>http://www.example.com/{{slug}}</id>
+    <link href="URL/{{slug}}"/>
+    <id>URL/{{slug}}</id>
     <updated>{{updated}}</updated>
     <summary>{{abstract}}</summary>
     <content type="xhtml">

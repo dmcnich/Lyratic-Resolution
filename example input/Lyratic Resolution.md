@@ -26,7 +26,7 @@ Oh, and I don't know how I know so much about shirts.
 [4]: https://en.wikipedia.org/wiki/Lisp_programming_language
 [5]: http://www.adaic.org/
 [6]: http://www.open-std.org/jtc1/sc22/wg14/
-[7]: https://d.mcni.ch/resolve.py
+[7]: https://d.mcni.ch/code
 [8]: http://mikeshea.net
 [9]: https://github.com/mshea/Pueblo
 [10]: http://pelican.readthedocs.org/en/3.2/

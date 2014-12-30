@@ -5,18 +5,18 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
   <meta name="viewport" content="initial-scale=1.0; width = device-width;" /> 
-    <title>{{title}} on Blog Title</title>
-    <link rel="stylesheet" type="text/css" href="static/main.css" />
+    <title>{{title}} on BLOG TITLE</title>
+    <link rel="stylesheet" type="text/css" href="main.css" />
 </head>
 
 <body>
 <header>
-<h1 class="masthead"><a href="http://www.example.com">Blog Title</a></h1>
-<p class="byline">by<a href="http://www.example.com"> author </a></p>
+<h1 class="masthead"><a href="URL">BLOG TITLE</a></h1>
+<p class="byline">by<a href="URL"> AUTHOR </a></p>
 </header>
 
 <section>
-<h2><a href="http://www.example.com/{{slug}}">{{title}}</a></h2>
+<h2><a href="URL/{{slug}}">{{title}}</a></h2>
 
 {{{body}}}
 
@@ -26,20 +26,12 @@
 <ul>
   <li>read more:</li>
 {{#taglist}}
-  <li><a href="http://www.example.comg/{{tag}}.html"> {{tag}}, </a></li>
+  <li><a href="URLg/{{tag}}.html"> {{tag}}, </a></li>
 {{/taglist}}
-  <li><a href="http://www.example.com/archive.html"> archive </a></li>
+  <li><a href="URL/archive.html"> archive </a></li>
 </ul>
 
-<form method="get" id="search" action="https://duckduckgo.com/">
-    <input type="hidden" name="sites" value="www.example.com"/>
-    <input type="hidden" name="k8" value="#000"/>
-    <input type="hidden" name="k9" value="#AF101C"/>
-    <input type="text" name="q" maxlength="255" placeholder="Search&hellip;"/>
-    <input type="submit" value="DuckDuckGo Search" style="visibility: hidden;" />
-</form>
-
-<p>licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">CC BY NC license</a> by <a href="http://www.example.com">auhor</a> on {{date}}.</p>
+<p>licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-nc/3.0/">CC BY NC license</a> by <a href="URL">auhor</a> on {{date}}.</p>
   </footer>
 </body>
 </html>
