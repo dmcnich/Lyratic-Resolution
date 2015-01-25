@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                   Fencing
+#                               Bolvangar Lights
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -30,6 +30,7 @@ def build_site(parameters):
   draftList = wrangle_files(pm['input'],pm['output'])    
   articleList = sort_by_date(draftList)
   articleList = filter_drafts(articleList)
+  articleList = older_and_newer(articleList)
     
   for article in articleList:
     if (article not in os.listdir(pm['output']) or 
@@ -76,6 +77,18 @@ def filter_drafts(articleList):
   for article in articleList:
     if article['datestamp'] >= dt.today():
       articleList.remove(article)
+  return articleList
+
+def older_and_newer(articleList):
+#add hooks for older/newer articles buttons
+  n=0
+  for article in articleList[1:]:
+    article['newer']={'newer':articleList[n]['slug']}
+    n+=1
+  n=1
+  for article in articleList[:-1]:
+    article['older']={'older':articleList[n]['slug']}
+    n+=1
   return articleList
 
 def list_tags(articles):
