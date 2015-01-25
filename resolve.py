@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                               Bolvangar Lights
+#                               The Daemon-Cages
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
 #start with blog parameters
 DieM = {'input':'/path/to/input',
-        'output':'/path/to/output',
+        'output':'/path/to/output,
         'pages':[('index.html',6),('archive.html',1024),('feed.xml',12)]}
 
 #import necessary modules
@@ -27,7 +27,7 @@ except ImportError:
 def build_site(parameters):
 #build the relevant pages and process files
   pm = parameters
-  draftList = wrangle_files(pm['input'],pm['output'])    
+  draftList,templateList = wrangle_files(pm['input'],pm['output'])    
   articleList = sort_by_date(draftList)
   articleList = filter_drafts(articleList)
   articleList = older_and_newer(articleList)
@@ -35,24 +35,25 @@ def build_site(parameters):
   for article in articleList:
     if (article not in os.listdir(pm['output']) or 
     modTime(output,article['slug']) < modTime(input,article['sourceFile'])):
-      build_page(article,'page.stache',pm['input'],
+      build_page(article,templateList['page.stache'],
                  pm['output'],article['slug'])
 
   tagList = list_tags(articleList)
   for tag in tagList:
     editedList = select_tagged_articles(tag,articleList)
-    build_page(editedList,'tag.stache',
-               pm['input'],pm['output'],tag+'.html')
+    build_page(editedList,templateList['tag.stache'],
+               pm['output'],tag+'.html')
 
   for page in pm['pages']:
-    build_page(articleList[:page[1]],os.path.splitext(page[0])[0]+
-               '.stache',pm['input'],pm['output'],page[0])
+    build_page(articleList[:page[1]],templateList[os.path.splitext(page[0])[0]+
+               '.stache'],pm['output'],page[0])
 
   compress_output(pm['output'])
 
 def wrangle_files(input,output):
 #process input folder for markdown and sass files
   draftList = []
+  templateList = {}
   fileList = os.listdir(input)
   existingOutput = os.listdir(output)
   for file in fileList:
@@ -61,11 +62,14 @@ def wrangle_files(input,output):
       draftList.append(article)
     elif file.endswith('.scss'):
       sassify(file,input,output)
-    elif file.endswith('.stache') or file.startswith('.'):
+    elif file.endswith('.stache'):
+      template = parse_template(file,input)
+      templateList[file] = template
+    elif file.startswith('.'):
       pass
     elif file not in existingOutput:
       copy_file(file,input,output)
-  return draftList
+  return draftList,templateList
 
 def sort_by_date(articleList):
 #sorts articles chronologically
@@ -115,6 +119,12 @@ def select_tagged_articles(tag,articles):
       pass
   return editedList
 
+def parse_template(fileName,input):
+#pre-parse mustache template
+  template = read_file(fileName,input)
+  parsedTemplate = pystache.parse(template)
+  return parsedTemplate
+
 def parse_article(fileName,input):
 #read contents of file into dictionary
   md = markdown.Markdown(extensions = ['meta','smarty'])
@@ -151,9 +161,8 @@ def parse_article(fileName,input):
   article['sourceFile'] = fileName
   return article
     
-def build_page(articles,templateName,input,output,fileName):
+def build_page(articles,template,output,fileName):
 #turn a dictionary and template into a webpage
-  template = read_file(templateName,input)
   data = {'updated':dt.isoformat(dt.utcnow())+'Z',
           'tag':fileName[:-5],'articles':articles}
   html = pystache.render(template,data)
