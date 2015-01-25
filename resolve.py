@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                 The Lost Boy
+#                                   Fencing
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -28,7 +28,8 @@ def build_site(parameters):
 #build the relevant pages and process files
   pm = parameters
   draftList = wrangle_files(pm['input'],pm['output'])    
-  articleList = sort_and_filter(draftList)
+  articleList = sort_by_date(draftList)
+  articleList = filter_drafts(articleList)
     
   for article in articleList:
     if (article not in os.listdir(pm['output']) or 
@@ -65,9 +66,13 @@ def wrangle_files(input,output):
       copy_file(file,input,output)
   return draftList
 
-def sort_and_filter(articleList):
-#sorts articles chronologically and filters out post-dated articles
+def sort_by_date(articleList):
+#sorts articles chronologically
   articleList.sort(key=lambda k: k['datestamp'], reverse=True)
+  return articleList
+
+def filter_drafts(articleList):
+#filters out post-dated articles
   for article in articleList:
     if article['datestamp'] >= dt.today():
       articleList.remove(article)
@@ -123,6 +128,7 @@ def parse_article(fileName,input):
     pass
   #then generate further useful attributes from metadata
   article['date'] = article['datestamp'].strftime('%A, %d %B \'%y')
+  article['weekday'] = article['datestamp'].strftime('%A')
   article['updated'] = dt.fromtimestamp(modifiedTime).isoformat()+'Z'
   remove_punct_map = dict.fromkeys(map(ord, string.punctuation))
   lowerTitle = str(article['title']).lower().translate(remove_punct_map)
