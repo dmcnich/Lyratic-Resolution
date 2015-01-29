@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                               The Daemon-Cages
+#                            The Silver Guillotine
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
 #start with blog parameters
 DieM = {'input':'/path/to/input',
-        'output':'/path/to/output,
+        'output':'/path/to/output',
         'pages':[('index.html',6),('archive.html',1024),('feed.xml',12)]}
 
 #import necessary modules
@@ -130,25 +130,17 @@ def parse_article(fileName,input):
   md = markdown.Markdown(extensions = ['meta','smarty'])
   post = read_file(fileName,input)
   modifiedTime = modTime(input,fileName)
-  article = {}
-  article['body'] = md.convert(post)
-  try: #try to get title from front matter
-    article['title'] = md.Meta['title'][0]
-  except KeyError: #use filename if not present
-    article['title'] = os.path.splitext(fileName)[0]
-  try: #try to get date from front matter
-    article['datestamp'] = dt.strptime(md.Meta['date'][0],'%Y-%m-%d')
-  except KeyError: #use modified date if not present
-    article['datestamp'] = dt.fromtimestamp(modifiedTime)
-  try: #try to get abstract from front matter
-    article['abstract'] = md.Meta['abstract'][0]
-  except KeyError: #use first sentence if not present
-    article['abstract'] = article['body'][:article['body'].index('.')]
-  try: #try to get tags from front matter
-    article['tags'] = list(str(md.Meta['tags'][0]).split(', '))
+  body = md.convert(post)
+  article = md.Meta
+  for key in article:
+    article[key]='\n'.join(article[key])
+  article.setdefault('title',os.path.splitext(fileName)[0])
+  article.setdefault('date',dt.fromtimestamp(modifiedTime).strftime('%Y-%m-%d'))
+  article['datestamp']=dt.strptime(article['date'],'%Y-%m-%d')
+  article['body'] = body
+  if 'tags' in article:
+    article['tags'] = list(article['tags'].split(', '))
     article['taglist'] = ({'tag':id} for id in article['tags'])
-  except KeyError:
-    pass
   #then generate further useful attributes from metadata
   article['date'] = article['datestamp'].strftime('%A, %d %B \'%y')
   article['weekday'] = article['datestamp'].strftime('%A')

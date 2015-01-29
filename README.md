@@ -4,7 +4,7 @@ Lyratic Resolution is a blog engine I wrote for two reasons: I wanted more contr
 
 The script expects a folder filled with [markdown][3] files and [mustache][4] templates. If you throw [scss][5] files in there too, they'll be processed as well, assuming you have [pyScss][6] installed. Speaking of assumptions: you'll need  recent [Markdown][7] and [Pystache][8] in your path for the script to work at all.
 
-Metadata is included in a [YAML][9] block at the start of each post file: `Title`, `Date`, `Abstract` and `Tags` are the optional keys, and the script will fill in the first three automatically if they are missing. There is an example post, as well as generic templates and a css file, in the "example input" folder. Find and replace `URL`, `BLOG TITLE` and `AUTHOR`, and you'll have a fully-functioning, [Creative Commons licensed][10] blog.
+Arbitrary metadata can be included in a [YAML][9] block at the start of each post file: `Title` and `Date`  will be determined from the filename and modification date, but only if they are not found in the file. There is an example post, as well as generic templates and a css file, in the "example input" folder. Find and replace `URL`, `BLOG TITLE` and `AUTHOR`, and you'll have a fully-functioning, [Creative Commons licensed][10] blog.
 
 Have fun!
 
