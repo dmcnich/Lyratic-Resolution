@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                            The Silver Guillotine
+#                                 The Witches
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
 
@@ -45,8 +45,12 @@ def build_site(parameters):
                pm['output'],tag+'.html')
 
   for page in pm['pages']:
+    if len(articleList)>page[1]:
+        nextPage = articleList[page[1]-1]['older']['older']
+    else:
+        nextPage = 0
     build_page(articleList[:page[1]],templateList[os.path.splitext(page[0])[0]+
-               '.stache'],pm['output'],page[0])
+               '.stache'],pm['output'],page[0],nextPage)
 
   compress_output(pm['output'])
 
@@ -153,10 +157,12 @@ def parse_article(fileName,input):
   article['sourceFile'] = fileName
   return article
     
-def build_page(articles,template,output,fileName):
+def build_page(articles,template,output,fileName,nextPage=0):
 #turn a dictionary and template into a webpage
   data = {'updated':dt.isoformat(dt.utcnow())+'Z',
-          'tag':fileName[:-5],'articles':articles}
+          'tag':fileName[:-5],
+          'nextPage':nextPage,
+          'articles':articles}
   html = pystache.render(template,data)
   write_file(fileName,output,html)
   
