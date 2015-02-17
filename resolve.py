@@ -1,14 +1,9 @@
 #!/usr/bin/env python3
 
 #                   Lyratic Resolution: Silvertongue Edition
-#                                 The Witches
+#                                  Fog and Ice
 #                       A blog engine by Duncan McNicholl
 #                                   CC-BY-NC
-
-#start with blog parameters
-DieM = {'input':'/path/to/input',
-        'output':'/path/to/output',
-        'pages':[('index.html',6),('archive.html',1024),('feed.xml',12)]}
 
 #import necessary modules
 from datetime import datetime as dt
@@ -17,6 +12,7 @@ import codecs
 import os
 import shutil
 import gzip
+import argparse
 import markdown
 import pystache
 try:
@@ -46,7 +42,7 @@ def build_site(parameters):
 
   for page in pm['pages']:
     if len(articleList)>page[1]:
-        nextPage = articleList[page[1]-1]['older']['older']
+        nextPage = articleList[page[1]]['slug']
     else:
         nextPage = 0
     build_page(articleList[:page[1]],templateList[os.path.splitext(page[0])[0]+
@@ -206,4 +202,11 @@ def compress_output(output):
       f_in.close()
 
 if __name__ == '__main__':
-  build_site(DieM)
+  parser = argparse.ArgumentParser()
+  parser.add_argument('output', nargs='?', default=os.getcwd(), 
+                      help='the output folder where the blog ends up')
+  parser.add_argument('input', nargs='?', default=os.getcwd(), 
+                      help='the input folder with markdown and mustache files')
+  parameters = vars(parser.parse_args())
+  parameters['pages'] = [('index.html',6),('archive.html',1024),('feed.xml',12)]
+  build_site(parameters)
